@@ -1,0 +1,2 @@
+deployment:
+    image: phbelitz/image:v1.2

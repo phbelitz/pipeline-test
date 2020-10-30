@@ -12,9 +12,15 @@ jobs:
       image: docker:stable
     env:
       DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_KEY_PASSPHRASE }}
-      VERSION: cicd
     steps:
         - uses: actions/checkout@v2
+        - name: install yq
+          run: |
+            echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
+            apk update
+            apk add yq --no-cache
+        - name: Get image version
+          run: yq r values.yaml 'deployment.image' | sed "s+.*:++" > VERSION
         - name: Login to DockerHub
           uses: docker/login-action@v1
           with:
@@ -23,6 +29,6 @@ jobs:
         - name: Prepare docker content trust
           run: mkdir -p ~/.docker/trust/private && echo "${{ secrets.DOCKER_KEY }}" > ~/.docker/trust/private/${{ secrets.DOCKER_KEY_NAME }}
         - name: Build image
-          run: docker build -t phbelitz/image:$VERSION -f docker/Dockerfile .
+          run: docker build -t phbelitz/image:$(cat VERSION) -f docker/Dockerfile .
         - name: Push image
-          run: DOCKER_CONTENT_TRUST=1 docker push phbelitz/image:$VERSION
+          run: DOCKER_CONTENT_TRUST=1 docker push phbelitz/image:$(cat VERSION)
